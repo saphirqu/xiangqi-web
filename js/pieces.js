@@ -1,13 +1,17 @@
 /* =========================================================
  * js/pieces.js —— 棋子数据与绘制
- * 只负责“把棋子摆到棋盘上”，不包含任何交互：
- * 不能点击、不能选中、不能走子。
+ * 只负责“棋子是什么、摆在哪、怎么画”，以及“当前谁被选中”这一状态：
+ * 不监听任何事件（点击绑定在 js/input.js）。
  *
  * 对外暴露：
- *   Pieces.pieces            —— 棋子对象数组（含 id/side/type/col/row/level）
+ *   Pieces.pieces            —— 棋子对象数组（含 id/side/type/col/row/level/selected）
  *   Pieces.drawAll(ctx)      —— 一次性画出所有棋子
  *   Pieces.drawPiece(ctx,p)  —— 画单个棋子
- *   Pieces.findAt(col,row)   —— 按交叉点查棋子（为后续“点击选中”预留）
+ *   Pieces.findAt(col,row)   —— 按交叉点查棋子
+ *   Pieces.select(piece)     —— 选中棋子（传 null 表示取消选中）
+ *   Pieces.toggleSelect(p)   —— 已选中则取消，否则选中
+ *   Pieces.clearSelection()  —— 取消当前选中
+ *   Pieces.getSelected()     —— 取当前选中棋子（无则 null）
  * ========================================================= */
 const Pieces = (function () {
   'use strict';
@@ -33,6 +37,14 @@ const Pieces = (function () {
   const DIAMETER = CELL_SIZE * 0.85;
   const RADIUS = DIAMETER / 2;
 
+  /* 选中高亮：金色光晕 + 金色外圈 */
+  const SELECT_RING_COLOR = '#ffc93c';                  // 外圈颜色
+  const SELECT_RING_WIDTH = 3;                          // 外圈线宽
+  const SELECT_RING_OFFSET = 6;                         // 外圈相对棋子半径的外扩
+  const SELECT_GLOW_COLOR = 'rgba(255, 201, 60, 0.90)'; // 光晕颜色
+  const SELECT_GLOW_BLUR = 14;                          // 光晕模糊半径
+  const SELECT_GLOW_FILL = 'rgba(255, 201, 60, 0.38)';  // 光圈内填充
+
   /* ---------------------------------------------------------
    * 初始布局
    * row 0 在上（黑方），row 9 在下（红方）
@@ -47,7 +59,8 @@ const Pieces = (function () {
         type: type,
         col: col,
         row: row,
-        level: 0       // 进阶等级，本阶段预留，暂不使用
+        level: 0,        // 进阶等级，本阶段预留，暂不使用
+        selected: false  // 是否处于选中态（同一时间最多一个为 true）
       });
     }
 
@@ -88,6 +101,79 @@ const Pieces = (function () {
   const pieces = createInitialPieces();
 
   /* ---------------------------------------------------------
+   * 选中状态：同一时间最多只有一个棋子被选中
+   *   selectedPiece 是唯一“真源”，piece.selected 只是给绘制看的快照
+   * --------------------------------------------------------- */
+  let selectedPiece = null;
+
+  function clearSelection() {
+    // 全部置 false，避免外部手动改过 flag 导致状态不同步
+    pieces.forEach(function (piece) {
+      piece.selected = false;
+    });
+    selectedPiece = null;
+  }
+
+  function select(piece) {
+    if (!piece) {
+      clearSelection();
+      return null;
+    }
+    if (selectedPiece !== piece) {
+      clearSelection();
+      selectedPiece = piece;
+      piece.selected = true;
+    }
+    return selectedPiece;
+  }
+
+  function toggleSelect(piece) {
+    if (!piece) {
+      clearSelection();
+      return null;
+    }
+    // 点的就是当前选中那枚 -> 取消
+    if (selectedPiece === piece) {
+      clearSelection();
+      return null;
+    }
+    // 点的另一枚 -> 选中自动转移（旧的自然被清掉）
+    return select(piece);
+  }
+
+  function getSelected() {
+    return selectedPiece;
+  }
+
+  /* ---------------------------------------------------------
+   * 选中高亮：金色光晕 + 金色实线外圈
+   * 先画高亮再画棋子本体，本体自然遮住光晕内侧，看起来像一圈发光边
+   * --------------------------------------------------------- */
+  function drawSelection(ctx, x, y) {
+    const ringRadius = RADIUS + SELECT_RING_OFFSET;
+
+    ctx.save();
+
+    // 光晕层
+    ctx.shadowColor = SELECT_GLOW_COLOR;
+    ctx.shadowBlur = SELECT_GLOW_BLUR;
+    ctx.fillStyle = SELECT_GLOW_FILL;
+    ctx.beginPath();
+    ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 外圈
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = SELECT_RING_COLOR;
+    ctx.lineWidth = SELECT_RING_WIDTH;
+    ctx.beginPath();
+    ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /* ---------------------------------------------------------
    * 绘制单个棋子
    * 坐标一律通过 Board.px / Board.py 换算，不自行计算
    * --------------------------------------------------------- */
@@ -96,6 +182,11 @@ const Pieces = (function () {
     const y = Board.py(piece.row);
     const ink = INK[piece.side];
     const text = CHARS[piece.side][piece.type];
+
+    // 选中态：先铺高亮，保证不被棋子本体盖住
+    if (piece.selected) {
+      drawSelection(ctx, x, y);
+    }
 
     ctx.save();
 
@@ -134,7 +225,7 @@ const Pieces = (function () {
   }
 
   /* ---------------------------------------------------------
-   * 按交叉点查找棋子（为后续“点击选中”预留，本阶段不调用）
+   * 按交叉点查找棋子
    * --------------------------------------------------------- */
   function findAt(col, row) {
     for (let i = 0; i < pieces.length; i++) {
@@ -149,6 +240,10 @@ const Pieces = (function () {
     pieces: pieces,
     drawAll: drawAll,
     drawPiece: drawPiece,
-    findAt: findAt
+    findAt: findAt,
+    select: select,
+    toggleSelect: toggleSelect,
+    clearSelection: clearSelection,
+    getSelected: getSelected
   };
 })();

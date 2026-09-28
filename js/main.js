@@ -37,6 +37,7 @@
   function init() {
     setupHiDPI();
     render();
+    Input.init(canvas, render);   // 绑定点击选中：处理完点击后整盘重绘
   }
 
   init();
