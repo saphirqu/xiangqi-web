@@ -1,0 +1,72 @@
+/* =========================================================
+ * style.css —— 页面外观
+ * 棋盘本身由 Canvas 绘制，这里只负责页面底色与自适应缩放。
+ * ========================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: radial-gradient(circle at 50% 0%, #3b2c1e 0%, #1b1410 100%);
+  color: #f0e2cc;
+  font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+}
+
+.app {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.app__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 10px;
+  text-indent: 10px; /* 抵消文字右侧多出的字距，保持视觉居中 */
+  color: #e8c88a;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+/* 木质外框：包住画布，形成“棋盘嵌在木框里”的观感 */
+.board-wrap {
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #8c6537 0%, #5c3f23 100%);
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+
+.board {
+  display: block;
+  border-radius: 4px;
+  /* 宽高由 JS 按棋盘尺寸写入内联样式；
+     这里保证小屏时等比缩小：限制最大宽度 + 高度按画布固有比例自动计算 */
+  max-width: 100%;
+  height: auto !important;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
