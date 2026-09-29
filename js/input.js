@@ -5,11 +5,11 @@
  *   再点同一枚          -> 取消选中
  *   点另一枚            -> 选中转移
  *   点空白 / 棋盘外     -> 取消选中
- *   已选中时点空格      -> 把选中棋子移过去（不校验规则）
- *   已选中时点敌方棋子  -> 吃掉它再把选中棋子移过去
+ *   已选中时点空格      -> 走法合法才把选中棋子移过去（校验见 js/rules.js）
+ *   已选中时点敌方棋子  -> 走法合法才吃掉它（校验见 js/rules.js）
  *   已选中时点己方棋子  -> 选中转移
- * 走子 / 吃子完成后一律取消选中。
- * 本阶段不校验走子规则、不做回合控制、不做胜负判定（后续再加）。
+ * 走子 / 吃子完成后一律取消选中；走法不合法则保持选中，什么都不做。
+ * 本阶段只校验走法形状，不做回合控制、不做胜负判定（后续再加）。
  *
  * 对外暴露：Input.init(canvas, render)
  *   canvas —— 棋盘 canvas
@@ -105,9 +105,12 @@ const Input = (function () {
       Pieces.toggleSelect(target);
       return;
     }
-    // 点空点 或 点敌方棋子 -> 走子 / 吃子（吃子由 Pieces.move 内部处理）
-    Pieces.move(selected, hit.col, hit.row);
-    Pieces.clearSelection();
+    // 点空点 或 点敌方棋子 -> 先校验走法规则，合法才走子 / 吃子（吃子由 Pieces.move 内部处理）
+    if (Rules.canMove(selected, hit.col, hit.row)) {
+      Pieces.move(selected, hit.col, hit.row);
+      Pieces.clearSelection();
+    }
+    // 走法不合法 -> 什么都不做：保持选中，方便玩家继续点别的位置
   }
 
   /* ---------------------------------------------------------

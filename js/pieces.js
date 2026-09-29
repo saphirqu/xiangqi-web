@@ -8,7 +8,7 @@
  *   Pieces.drawAll(ctx)      —— 一次性画出所有棋子
  *   Pieces.drawPiece(ctx,p)  —— 画单个棋子
  *   Pieces.findAt(col,row)   —— 按交叉点查棋子
- *   Pieces.move(piece,c,r)   —— 把棋子移到目标交叉点（空点直接移，敌方棋子先吃掉）
+ *   Pieces.move(piece,c,r)   —— 走子（先按 Rules 校验走法，空点直接移，敌方棋子先吃掉）
  *   Pieces.select(piece)     —— 选中棋子（传 null 表示取消选中）
  *   Pieces.toggleSelect(p)   —— 已选中则取消，否则选中
  *   Pieces.clearSelection()  —— 取消当前选中
@@ -257,14 +257,18 @@ const Pieces = (function () {
 
   /* ---------------------------------------------------------
    * 走子：把 piece 移到交叉点 (col, row)
+   *   第一步先交给 Rules.canMove 校验走法形状，不合法直接放弃
    *   目标有己方棋子 -> 不做任何改动，返回 null
    *   目标有敌方棋子 -> 先移除那枚敌方棋子，再改 piece 的 col / row
    *   目标为空       -> 直接改 piece 的 col / row
-   * 本阶段不校验任何走子规则，也不做回合控制、胜负判定。
+   * 走法规则见 js/rules.js；送将 / 将帅对面、回合控制、胜负判定均未实现。
    * 移动成功后返回 piece，调用方负责取消选中并重绘。
    * --------------------------------------------------------- */
   function move(piece, col, row) {
     if (!piece) return null;
+
+    // 先校验走法规则：不合法就直接放弃，棋盘状态保持原样
+    if (!Rules.canMove(piece, col, row)) return null;
 
     // 目标点上的棋子（在移动之前先定下来）
     const target = findAt(col, row);
