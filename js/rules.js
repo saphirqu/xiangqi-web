@@ -3,6 +3,7 @@
  *
  * 对外暴露：
  *   Rules.canMove(piece, col, row) —— 这枚棋子能否按规则走到 (col, row)
+ *   Rules.getLegalTargets(piece)   —— 这枚棋子的全部合法落点，[{ col: c, row: r }, ...]
  *
  * 分派方式：按 piece.type 分派（switch），不按 piece.level 分派。
  *   进阶棋子的走法后续再补，这里只覆盖 7 种基础 type：
@@ -211,7 +212,44 @@ const Rules = (function () {
     }
   }
 
+  /* =========================================================
+   * 对外入口：列出这枚棋子的全部合法落点
+   * 遍历方法：按列优先（col 0~8 外层、row 0~9 内层）扫遍整个棋盘，
+   *   每格做三步过滤：
+   *     1) 跳过棋子自己所在的那一格（原地不动不算走子）
+   *     2) canMove 不合法 -> 跳过（走法形状由各私有走法函数负责）
+   *     3) 目标点上是己方棋子 -> 跳过（不能吃自己的子）
+   *   剩下的就是合法落点，压入结果数组。
+   * 返回：数组，每项形如 { col: c, row: r }；piece 为空时返回空数组。
+   * 本阶段依然只校验“走法形状”，不做送将 / 将帅对面校验（留给后续步骤）。
+   * ========================================================= */
+  function getLegalTargets(piece) {
+    const targets = [];
+
+    if (!piece) return targets;
+
+    for (let col = 0; col < COLS; col++) {
+      for (let row = 0; row < ROWS; row++) {
+        // 1) 自身所在的交叉点不画提示
+        if (col === piece.col && row === piece.row) continue;
+
+        // 2) 走法形状不合法
+        if (!canMove(piece, col, row)) continue;
+
+        // 3) 目标点上的棋子是己方 -> 不能吃自己的子
+        //    （目标点为空、或为敌方棋子都算合法落点）
+        const target = Pieces.findAt(col, row);
+        if (target && target.side === piece.side) continue;
+
+        targets.push({ col: col, row: row });
+      }
+    }
+
+    return targets;
+  }
+
   return {
-    canMove: canMove
+    canMove: canMove,
+    getLegalTargets: getLegalTargets
   };
 })();

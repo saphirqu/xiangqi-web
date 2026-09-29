@@ -46,6 +46,14 @@ const Pieces = (function () {
   const SELECT_GLOW_BLUR = 14;                          // 光晕模糊半径
   const SELECT_GLOW_FILL = 'rgba(255, 201, 60, 0.38)';  // 光圈内填充
 
+  /* 合法落点提示：全部用绿色，靠形态区分（空点 = 实心小圆点，可吃敌子 = 细圆环），
+   * 与金色选中高亮、米黄棋盘底色都能明显区分 */
+  const HINT_DOT_COLOR = 'rgba(46, 160, 67, 0.75)';   // 空点小圆点的填充色（绿色半透明）
+  const HINT_DOT_RADIUS = CELL_SIZE * 0.12;           // 小圆点半径（约 7.2px）
+  const HINT_RING_COLOR = 'rgba(46, 160, 67, 0.90)';  // 可吃敌子的圆环颜色（绿色半透明）
+  const HINT_RING_WIDTH = 2;                          // 圆环线宽
+  const HINT_RING_OFFSET = 5;                         // 圆环相对棋子半径的外扩
+
   /* ---------------------------------------------------------
    * 初始布局
    * row 0 在上（黑方），row 9 在下（红方）
@@ -217,9 +225,73 @@ const Pieces = (function () {
   }
 
   /* ---------------------------------------------------------
-   * 绘制全部棋子
+   * 绘制合法落点提示（供选中棋子使用）
+   *   空点       -> 绿色实心小圆点
+   *   敌方棋子点 -> 绿色细圆环（半径 = 棋子半径 + 外扩，正好把敌子圈住）
+   * 落点来源是 Rules.getLegalTargets，已过滤掉自身与己方棋子，
+   * 所以这里查到的棋子一定是敌方棋子。
+   * 分两趟画：先统一描所有圆环、再统一填所有小圆点，
+   * 避免 fillStyle / strokeStyle 在同一个路径里反复切换。
+   * --------------------------------------------------------- */
+  function drawMoveHints(ctx, piece) {
+    const targets = Rules.getLegalTargets(piece);
+
+    ctx.save();
+
+    // 第一趟：可吃敌子 -> 绿色细圆环
+    ctx.strokeStyle = HINT_RING_COLOR;
+    ctx.lineWidth = HINT_RING_WIDTH;
+    ctx.beginPath();
+
+    targets.forEach(function (target) {
+      // 空点交给第二趟画，这里只管有棋子的落点
+      if (!findAt(target.col, target.row)) return;
+
+      const x = Board.px(target.col);
+      const y = Board.py(target.row);
+      const radius = RADIUS + HINT_RING_OFFSET;
+
+      ctx.moveTo(x + radius, y);   // 断开与上一个圆的连线
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+    });
+
+    ctx.stroke();
+
+    // 第二趟：空点 -> 绿色实心小圆点
+    ctx.fillStyle = HINT_DOT_COLOR;
+    ctx.beginPath();
+
+    targets.forEach(function (target) {
+      // 有棋子的落点已经在第一趟画过
+      if (findAt(target.col, target.row)) return;
+
+      const x = Board.px(target.col);
+      const y = Board.py(target.row);
+
+      ctx.moveTo(x + HINT_DOT_RADIUS, y);   // 断开与上一个圆的连线
+      ctx.arc(x, y, HINT_DOT_RADIUS, 0, Math.PI * 2);
+    });
+
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  /* ---------------------------------------------------------
+   * 绘制全部棋子（附当前选中棋子的合法落点提示）
+   * 提示画在棋子之前（即棋子底层）：
+   *   空点小圆点画在无子的交叉点上，怎么画都不会跟棋子打架；
+   *   可吃敌子的圆环半径是「棋子半径 + 5」，正好贴着敌子外沿，
+   *   放在底层能保证只露出一圈干净的绿色外环，不会压掉敌子本身的描边与汉字。
+   * 取消选中 / 走子后选中态被清掉，下次整盘重绘就不再有提示。
    * --------------------------------------------------------- */
   function drawAll(ctx) {
+    const selected = getSelected();
+
+    if (selected) {
+      drawMoveHints(ctx, selected);
+    }
+
     pieces.forEach(function (piece) {
       drawPiece(ctx, piece);
     });
