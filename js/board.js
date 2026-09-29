@@ -262,6 +262,21 @@ const Board = (function () {
     ctx.restore();
 
     drawRiver(ctx);        // 文字（无需像素对齐）
+    drawWatermark(ctx);    // 水印需要记得删
+  }
+
+  /* ---------------------------------------------------------
+   * 8. 水印：棋盘底部中央，署名用，半透明不挡棋子
+   *    以后不想要水印时：删掉 draw 里的调用 + 删掉这个函数即可
+   * --------------------------------------------------------- */
+  function drawWatermark(ctx) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(107, 68, 35, 0.45)';
+    ctx.font = 'italic 12px "KaiTi", "STKaiti", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('by qutianyi2026', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 8);
+    ctx.restore();
   }
 
   return {
@@ -271,3 +286,4 @@ const Board = (function () {
     MARKER_POINTS: MARKER_POINTS
   };
 })();
+
