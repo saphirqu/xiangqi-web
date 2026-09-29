@@ -9,7 +9,9 @@
  *   已选中时点敌方棋子  -> 走法合法才吃掉它（校验见 js/rules.js）
  *   已选中时点己方棋子  -> 选中转移
  * 走子 / 吃子完成后一律取消选中；走法不合法则保持选中，什么都不做。
- * 本阶段只校验走法形状，不做回合控制、不做胜负判定（后续再加）。
+ * 本阶段只校验走法形状，不做回合控制；
+ * 胜负判定（吃将）交给 js/game.js：走子成功后调 Game.checkGameOver()。
+ * 游戏一旦结束（Game.isOver() 为 true），本次点击整体忽略 —— 棋盘锁定。
  *
  * 对外暴露：Input.init(canvas, render)
  *   canvas —— 棋盘 canvas
@@ -77,6 +79,9 @@ const Input = (function () {
    *    本阶段不区分红黑回合，双方棋子都可选
    * --------------------------------------------------------- */
   function handleClick(canvas, event) {
+    // 游戏已结束（已分出胜负）-> 棋盘锁定：点棋子 / 点空白一律无反应
+    if (Game.isOver()) return;
+
     const hit = toIntersection(toBoardPoint(canvas, event));
 
     // 点空白 / 棋盘外：如果正选中某枚棋子 -> 取消选中
@@ -107,8 +112,15 @@ const Input = (function () {
     }
     // 点空点 或 点敌方棋子 -> 先校验走法规则，合法才走子 / 吃子（吃子由 Pieces.move 内部处理）
     if (Rules.canMove(selected, hit.col, hit.row)) {
-      Pieces.move(selected, hit.col, hit.row);
-      Pieces.clearSelection();
+      const moved = Pieces.move(selected, hit.col, hit.row);
+
+      // 只有真的走成了（返回棋子）才清选中并做胜负检测：
+      // 走法被拒时保持选中，方便玩家继续点别的位置；
+      // 检测放在走子之后，保证不会“每次点击都检测”。
+      if (moved) {
+        Pieces.clearSelection();
+        Game.checkGameOver();     // 将 / 帅被吃则立即结束游戏（见 js/game.js）
+      }
     }
     // 走法不合法 -> 什么都不做：保持选中，方便玩家继续点别的位置
   }

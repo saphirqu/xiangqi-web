@@ -13,6 +13,7 @@
  *   Pieces.toggleSelect(p)   —— 已选中则取消，否则选中
  *   Pieces.clearSelection()  —— 取消当前选中
  *   Pieces.getSelected()     —— 取当前选中棋子（无则 null）
+ *   Pieces.reset()           —— 重置为初始布局，并清空选中态
  * ========================================================= */
 const Pieces = (function () {
   'use strict';
@@ -361,6 +362,20 @@ const Pieces = (function () {
     return piece;
   }
 
+  /* ---------------------------------------------------------
+   * 重置为初始布局（供「再来一局」使用）
+   * pieces 是模块内唯一的棋子容器，外部（如 game.js）拿到的是同一个数组引用，
+   * 所以不能重新赋值，只能“原地清空 + 重新灌入”，否则外部引用会失效。
+   * 被吃掉的棋子会随着清空一并消失，重新生成后自然全部回到初始位置。
+   * --------------------------------------------------------- */
+  function reset() {
+    pieces.length = 0;                              // 原地清空（保留数组引用）
+    createInitialPieces().forEach(function (piece) {
+      pieces.push(piece);
+    });
+    clearSelection();                               // 选中态一并清掉，避免悬空引用
+  }
+
   return {
     pieces: pieces,
     drawAll: drawAll,
@@ -370,6 +385,7 @@ const Pieces = (function () {
     select: select,
     toggleSelect: toggleSelect,
     clearSelection: clearSelection,
-    getSelected: getSelected
+    getSelected: getSelected,
+    reset: reset
   };
 })();

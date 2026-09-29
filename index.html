@@ -6,11 +6,13 @@
   <title>进阶象棋</title>
   <link rel="stylesheet" href="css/style.css">
 
-  <!-- 按依赖顺序加载：常量 -> 绘制 -> 输入 -> 入口（defer 保证顺序执行且 DOM 已就绪） -->
+  <!-- 按依赖顺序加载：常量 -> 绘制 -> 棋子 -> 状态机 -> 输入 -> 入口
+       （defer 保证按此顺序执行，且在 DOM 就绪后才运行） -->
   <script src="js/constants.js" defer></script>
   <script src="js/rules.js" defer></script>
   <script src="js/board.js" defer></script>
   <script src="js/pieces.js" defer></script>
+  <script src="js/game.js" defer></script>
   <script src="js/input.js" defer></script>
   <script src="js/main.js" defer></script>
 </head>
@@ -20,6 +22,14 @@
 
     <div class="board-wrap">
       <canvas id="board" class="board"></canvas>
+
+      <!-- 结束弹窗：默认带 hidden 类，分出胜负后由 js/game.js 显示 -->
+      <div id="game-over" class="overlay hidden">
+        <div class="overlay__box">
+          <h2 id="game-over-title" class="overlay__title">游戏结束</h2>
+          <button id="game-over-restart" class="overlay__btn" type="button">再来一局</button>
+        </div>
+      </div>
     </div>
   </main>
 </body>

@@ -70,3 +70,71 @@ body {
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* =========================================================
+ * 结束弹窗：遮罩 + 卡片 + 按钮
+ * 显示 / 隐藏由 js/game.js 切换 .hidden 类控制
+ * ========================================================= */
+
+/* 遮罩层：盖住整页，半透明黑压低背景亮度 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* 加 hidden 即隐藏（必须放在 .overlay 之后，靠层叠顺序覆盖 display: flex） */
+.overlay.hidden {
+  display: none;
+}
+
+/* 弹窗卡片：米白底 + 木色描边，与棋盘风格一致 */
+.overlay__box {
+  min-width: 260px;
+  padding: 28px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  text-align: center;
+  border-radius: 12px;
+  border: 2px solid #8c6537;
+  background: linear-gradient(160deg, #f8f1de 0%, #ecdcb8 100%);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.overlay__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  text-indent: 4px; /* 与页面标题同款：抵消字距带来的视觉偏移 */
+  color: #6b4423;
+}
+
+.overlay__btn {
+  padding: 10px 28px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  letter-spacing: 2px;
+  text-indent: 2px;
+  color: #f8f1de;
+  background: #a8452f;            /* 木色偏红，呼应红方棋子 */
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.overlay__btn:hover {
+  background: #c05a41;
+}
+
+.overlay__btn:active {
+  background: #8c3524;
+}
