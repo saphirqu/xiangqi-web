@@ -72,6 +72,68 @@ body {
 }
 
 /* =========================================================
+ * 状态栏：标题下方、棋盘上方的一条横条
+ * 左：当前回合提示；右：投降按钮（不可用时由 JS 加 disabled）
+ * ========================================================= */
+.status-bar {
+  width: 100%;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  border: 1px solid #8c6537;
+  background: linear-gradient(160deg, #6d4c2b 0%, #4a341f 100%);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+
+/* 回合提示：字号稍大、颜色偏亮、字距略加宽 */
+.status-bar__turn {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-indent: 3px; /* 与页面标题同款：抵消字距带来的视觉偏移 */
+  color: #f3d9a4;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+}
+
+/* 投降按钮：沿用结束弹窗按钮的木红配色，内边距略小一号 */
+.status-bar__btn {
+  padding: 7px 18px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-indent: 2px;
+  color: #f8f1de;
+  background: #a8452f;            /* 木色偏红，与 .overlay__btn 一致 */
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.status-bar__btn:hover {
+  background: #c05a41;
+}
+
+.status-bar__btn:active {
+  background: #8c3524;
+}
+
+/* 游戏结束后由 js/game.js 置 disabled：变暗且不可点 */
+.status-bar__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status-bar__btn:disabled:hover {
+  background: #a8452f;            /* 禁用时不响应 hover 变色 */
+}
+
+/* =========================================================
  * 结束弹窗：遮罩 + 卡片 + 按钮
  * 显示 / 隐藏由 js/game.js 切换 .hidden 类控制
  * ========================================================= */

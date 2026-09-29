@@ -20,6 +20,12 @@
   <main class="app">
     <h1 class="app__title">进阶象棋</h1>
 
+    <!-- 状态栏：左侧回合提示，右侧投降按钮（文案与可用状态由 js/game.js 刷新） -->
+    <div class="status-bar">
+      <span id="status-turn" class="status-bar__turn">轮到红方走</span>
+      <button id="status-surrender" class="status-bar__btn" type="button">红方投降</button>
+    </div>
+
     <div class="board-wrap">
       <canvas id="board" class="board"></canvas>
 
