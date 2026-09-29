@@ -8,6 +8,7 @@
  *   Pieces.drawAll(ctx)      —— 一次性画出所有棋子
  *   Pieces.drawPiece(ctx,p)  —— 画单个棋子
  *   Pieces.findAt(col,row)   —— 按交叉点查棋子
+ *   Pieces.move(piece,c,r)   —— 把棋子移到目标交叉点（空点直接移，敌方棋子先吃掉）
  *   Pieces.select(piece)     —— 选中棋子（传 null 表示取消选中）
  *   Pieces.toggleSelect(p)   —— 已选中则取消，否则选中
  *   Pieces.clearSelection()  —— 取消当前选中
@@ -236,11 +237,60 @@ const Pieces = (function () {
     return null;
   }
 
+  /* ---------------------------------------------------------
+   * 从 pieces 中移除一枚棋子（内部使用，不对外暴露）
+   * 函数声明会提升，所以这里可以先于定义引用 clearSelection
+   * --------------------------------------------------------- */
+  function removePiece(piece) {
+    const index = pieces.indexOf(piece);
+    if (index === -1) return false;
+
+    // 被移除的恰好是当前选中那枚时，一并清掉选中状态，
+    // 避免 selectedPiece 指向已经不在 pieces 里的对象（悬空引用）
+    if (selectedPiece === piece) {
+      clearSelection();
+    }
+
+    pieces.splice(index, 1);
+    return true;
+  }
+
+  /* ---------------------------------------------------------
+   * 走子：把 piece 移到交叉点 (col, row)
+   *   目标有己方棋子 -> 不做任何改动，返回 null
+   *   目标有敌方棋子 -> 先移除那枚敌方棋子，再改 piece 的 col / row
+   *   目标为空       -> 直接改 piece 的 col / row
+   * 本阶段不校验任何走子规则，也不做回合控制、胜负判定。
+   * 移动成功后返回 piece，调用方负责取消选中并重绘。
+   * --------------------------------------------------------- */
+  function move(piece, col, row) {
+    if (!piece) return null;
+
+    // 目标点上的棋子（在移动之前先定下来）
+    const target = findAt(col, row);
+
+    // 目标点有己方棋子（也包括“点自己”）：位置不变，交给调用方做选中转移
+    if (target && target.side === piece.side) {
+      return null;
+    }
+
+    // 目标点是敌方棋子 -> 吃掉它
+    if (target) {
+      removePiece(target);
+    }
+
+    piece.col = col;
+    piece.row = row;
+
+    return piece;
+  }
+
   return {
     pieces: pieces,
     drawAll: drawAll,
     drawPiece: drawPiece,
     findAt: findAt,
+    move: move,
     select: select,
     toggleSelect: toggleSelect,
     clearSelection: clearSelection,

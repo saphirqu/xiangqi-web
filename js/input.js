@@ -1,11 +1,15 @@
 /* =========================================================
  * js/input.js —— 鼠标 / 触摸输入
- * 只做两件事：把画布点击翻译成棋盘坐标；驱动 Pieces 的选中状态。
- *   点棋子          -> 选中
- *   再点同一枚      -> 取消选中
- *   点另一枚        -> 选中转移
- *   点空白 / 棋盘外 -> 取消选中
- * 不做走子、不做回合控制（后续再加）。
+ * 只做两件事：把画布点击翻译成棋盘坐标；驱动 Pieces 的选中状态与走子。
+ *   点棋子              -> 选中
+ *   再点同一枚          -> 取消选中
+ *   点另一枚            -> 选中转移
+ *   点空白 / 棋盘外     -> 取消选中
+ *   已选中时点空格      -> 把选中棋子移过去（不校验规则）
+ *   已选中时点敌方棋子  -> 吃掉它再把选中棋子移过去
+ *   已选中时点己方棋子  -> 选中转移
+ * 走子 / 吃子完成后一律取消选中。
+ * 本阶段不校验走子规则、不做回合控制、不做胜负判定（后续再加）。
  *
  * 对外暴露：Input.init(canvas, render)
  *   canvas —— 棋盘 canvas
@@ -75,20 +79,35 @@ const Input = (function () {
   function handleClick(canvas, event) {
     const hit = toIntersection(toBoardPoint(canvas, event));
 
+    // 点空白 / 棋盘外：如果正选中某枚棋子 -> 取消选中
     if (!hit) {
-      Pieces.clearSelection();          // 点空白 / 棋盘外 -> 取消选中
+      Pieces.clearSelection();
       return;
     }
 
-    const piece = Pieces.findAt(hit.col, hit.row);
+    const target = Pieces.findAt(hit.col, hit.row);
+    const selected = Pieces.getSelected();
 
-    if (!piece) {
-      Pieces.clearSelection();          // 交叉点上没有棋子 -> 取消选中
-      return;
+    // 没有选中任何棋子
+    if (!selected) {
+      if (target) Pieces.toggleSelect(target);   // 点棋子 -> 选中
+      return;                                    // 点空点 -> 什么都不做
     }
 
-    // 点棋子：同一枚再点一次取消，否则选中（选中自动转移）
-    Pieces.toggleSelect(piece);
+    // 已有选中棋子
+    // 点自己 -> 取消选中
+    if (target === selected) {
+      Pieces.clearSelection();
+      return;
+    }
+    // 点己方另一枚 -> 选中转移
+    if (target && target.side === selected.side) {
+      Pieces.toggleSelect(target);
+      return;
+    }
+    // 点空点 或 点敌方棋子 -> 走子 / 吃子（吃子由 Pieces.move 内部处理）
+    Pieces.move(selected, hit.col, hit.row);
+    Pieces.clearSelection();
   }
 
   /* ---------------------------------------------------------
